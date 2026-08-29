@@ -239,7 +239,7 @@ export default function AdminSidebar() {
           </button>
           )}
         </div>
-        <div className={`mt-4 flex items-center ${collapsed ? "justify-center" : "justify-between px-1"}`}>
+        <div className={`mt-4 flex items-center ${collapsed ? "flex-col gap-3 justify-center" : "justify-between px-1"}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-blue/10 text-blue flex items-center justify-center text-sm font-bold flex-shrink-0 ring-2 ring-blue/20">
               {adminInitial}
@@ -251,6 +251,20 @@ export default function AdminSidebar() {
             </div>
             )}
           </div>
+          
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`text-text-muted hover:text-text-primary hover:bg-surface-2 rounded-md transition-colors hidden md:block ${collapsed ? "p-2" : "p-1.5"}`}
+            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {collapsed ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -306,24 +320,9 @@ export default function AdminSidebar() {
 
       {/* Footer Area */}
       <div className={`p-3 border-t border-border mt-auto flex flex-col gap-2`}>
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between px-3 py-2"}`}>
-          {!collapsed && <span className="text-xs font-medium text-text-muted">Theme</span>}
+        <div className={`flex items-center justify-center py-2`}>
+          {!collapsed && <span className="text-xs font-medium text-text-muted mr-3">Theme</span>}
           <ThemeToggle />
-        </div>
-        <div className={`flex items-center ${collapsed ? "justify-center" : "justify-end px-3 py-2"}`}>
-          <button 
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1.5 text-text-muted hover:text-text-primary hover:bg-surface-2 rounded-md transition-colors hidden md:block"
-            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {collapsed ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              )}
-            </svg>
-          </button>
         </div>
       </div>
     </>
