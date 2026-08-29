@@ -52,6 +52,11 @@ export default function NewGrievancePage() {
     checkMaintenance();
   }, [supabase]);
 
+  // Scroll to top whenever the step changes
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
+
   const nextStep0 = async (useAi: boolean) => {
     const isStepValid = await methods.trigger(["subject", "description"]);
     if (isStepValid) {
