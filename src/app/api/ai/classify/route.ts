@@ -70,8 +70,11 @@ If the description is complete gibberish or entirely unrelated to government ser
       }
     });
 
-    const responseText = response.text;
+    let responseText = response.text;
     if (!responseText) throw new Error("Empty AI response");
+
+    // Strip markdown formatting if Gemini included it despite instructions
+    responseText = responseText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
 
     const result = JSON.parse(responseText);
 
