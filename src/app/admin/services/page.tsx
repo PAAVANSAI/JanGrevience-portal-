@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import AdminPageHeader from "@/components/layout/AdminPageHeader";
+import { AdminPageHeader } from "@/components/layout/AdminPageHeader";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
 interface Service {
