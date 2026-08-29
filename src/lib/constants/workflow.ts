@@ -1,0 +1,19 @@
+import { GrievanceStatus } from "@/types/database";
+
+export const VALID_TRANSITIONS: Record<GrievanceStatus, GrievanceStatus[]> = {
+  SUBMITTED: ["ACKNOWLEDGED", "ASSIGNED", "REJECTED", "ESCALATED"],
+  ACKNOWLEDGED: ["ASSIGNED", "REJECTED", "ESCALATED"],
+  ASSIGNED: ["IN_PROGRESS", "ESCALATED"],
+  IN_PROGRESS: ["ADDITIONAL_INFORMATION_REQUIRED", "ACTION_TAKEN", "RESOLVED", "REJECTED", "ESCALATED"],
+  ADDITIONAL_INFORMATION_REQUIRED: ["IN_PROGRESS", "ESCALATED"],
+  ACTION_TAKEN: ["RESOLVED", "ESCALATED"],
+  RESOLVED: ["CLOSED", "REOPENED"],
+  CLOSED: [],
+  REJECTED: [],
+  REOPENED: ["IN_PROGRESS", "ACTION_TAKEN", "RESOLVED", "ESCALATED"],
+  ESCALATED: ["IN_PROGRESS", "ACTION_TAKEN", "RESOLVED", "REJECTED"],
+};
+
+export function getValidNextStatuses(currentStatus: GrievanceStatus): GrievanceStatus[] {
+  return VALID_TRANSITIONS[currentStatus] || [];
+}
