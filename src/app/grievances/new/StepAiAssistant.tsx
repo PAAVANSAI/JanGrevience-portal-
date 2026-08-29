@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useFormContext } from "react-hook-form";
 import type { GrievanceFormData } from "@/lib/validations/grievance";
@@ -22,7 +22,8 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
   const [error, setError] = useState("");
   const [departmentName, setDepartmentName] = useState("");
   const [categoryName, setCategoryName] = useState("");
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     let isMounted = true;
@@ -39,22 +40,29 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
           throw new Error("Failed to get AI classification.");
         }
 
-        const data: AiClassificationSuggestion = await res.json();
+        const data = await res.json();
+        
+        // Check if the API returned an error response (status 200 but with error field)
+        if (data.error || !data.suggestedDepartmentId) {
+          throw new Error(data.reasoning || data.error || "AI could not classify this grievance.");
+        }
+
+        const suggestion: AiClassificationSuggestion = data;
         
         if (isMounted) {
-          setSuggestion(data);
+          setSuggestion(suggestion);
           
           // Pre-fill the form so if they modify, it's already there
-          if (data.suggestedDepartmentId) setValue("departmentId", data.suggestedDepartmentId);
-          if (data.suggestedCategoryId) setValue("categoryId", data.suggestedCategoryId);
+          if (suggestion.suggestedDepartmentId) setValue("departmentId", suggestion.suggestedDepartmentId);
+          if (suggestion.suggestedCategoryId) setValue("categoryId", suggestion.suggestedCategoryId);
 
           // Fetch names for display
-          if (data.suggestedDepartmentId) {
-            const { data: d } = await supabase.from("departments").select("name").eq("id", data.suggestedDepartmentId).single();
+          if (suggestion.suggestedDepartmentId) {
+            const { data: d } = await supabase.from("departments").select("name").eq("id", suggestion.suggestedDepartmentId).single();
             if (d) setDepartmentName(d.name);
           }
-          if (data.suggestedCategoryId) {
-            const { data: c } = await supabase.from("categories").select("name").eq("id", data.suggestedCategoryId).single();
+          if (suggestion.suggestedCategoryId) {
+            const { data: c } = await supabase.from("categories").select("name").eq("id", suggestion.suggestedCategoryId).single();
             if (c) setCategoryName(c.name);
           }
 
@@ -65,11 +73,11 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
               const { data: loggedRec } = await supabase.from("grievance_ai_classifications").insert({
                 citizen_id: authData.user.id,
                 input_text: description,
-                suggested_department_id: data.suggestedDepartmentId,
-                suggested_category_id: data.suggestedCategoryId,
-                suggested_priority: data.suggestedPriority,
-                confidence: data.confidence,
-                reasoning: data.reasoning,
+                suggested_department_id: suggestion.suggestedDepartmentId,
+                suggested_category_id: suggestion.suggestedCategoryId,
+                suggested_priority: suggestion.suggestedPriority,
+                confidence: suggestion.confidence,
+                reasoning: suggestion.reasoning,
                 was_accepted: false, // Updated later upon submission
               }).select("id").single();
               
@@ -90,7 +98,8 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
 
     fetchClassification();
     return () => { isMounted = false; };
-  }, [description, setValue, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [description, setValue]);
 
   if (isLoading) {
     return (

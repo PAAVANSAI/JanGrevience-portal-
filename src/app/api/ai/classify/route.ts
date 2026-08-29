@@ -5,9 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(req: Request) {
   let departments: any[] = [];
   let categories: any[] = [];
+  let description = "";
   
   try {
-    const { description } = await req.json();
+    const body = await req.json();
+    description = body.description;
 
     if (!description || typeof description !== "string") {
       return NextResponse.json({ error: "Description is required" }, { status: 400 });
