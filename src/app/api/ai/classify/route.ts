@@ -82,8 +82,8 @@ Respond with ONLY this JSON (no markdown, no backticks, no explanation outside t
 
     let result;
     
-    // Try with gemini-1.5-flash first
-    const models = ["gemini-1.5-flash"];
+    // This specific API key only supports the 3.x series models
+    const models = ["gemini-3.6-flash", "gemini-3.5-flash-lite"];
     let lastError: any = null;
 
     for (const model of models) {
