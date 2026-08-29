@@ -173,15 +173,45 @@ Respond with ONLY this JSON (no markdown, no backticks, no explanation outside t
             if (dept.description && dept.description.toLowerCase().includes(word)) score += 0.5;
           }
 
-          // specific domain mapping rules for common terms to make it smarter
+          // ─── COMPOUND PHRASE DETECTION (highest priority) ───
+          // These run first and carry the most weight, preventing individual
+          // word matches from overriding the true intent of the complaint.
+          const compoundPhrases: { phrases: string[]; deptKeyword: string; catKeyword?: string; weight: number }[] = [
+            // Electricity / Power
+            { phrases: ["street light", "street lamp", "lamp post", "light pole", "power cut", "power outage", "power failure", "no electricity", "electric pole", "transformer", "power supply"], deptKeyword: "Electricity", weight: 25 },
+            // Water
+            { phrases: ["water supply", "water leak", "water pipe", "water tanker", "drinking water", "dirty water", "no water", "water shortage"], deptKeyword: "Water", weight: 25 },
+            // Road
+            { phrases: ["road repair", "road damage", "pot hole", "broken road", "road construction"], deptKeyword: "Road", weight: 25 },
+            // Health
+            { phrases: ["mosquito breeding", "food poisoning", "public health", "hospital staff"], deptKeyword: "Health", weight: 25 },
+          ];
+
+          for (const rule of compoundPhrases) {
+            for (const phrase of rule.phrases) {
+              if (text.includes(phrase)) {
+                if (dept.name.toLowerCase().includes(rule.deptKeyword.toLowerCase())) {
+                  score += rule.weight;
+                  if (rule.catKeyword && cat.name.toLowerCase().includes(rule.catKeyword.toLowerCase())) {
+                    score += 10;
+                  }
+                }
+              }
+            }
+          }
+
+          // ─── SINGLE KEYWORD DOMAIN RULES ───
+          // "street" alone should NOT boost Road if the text also contains "street light" or "street lamp"
+          const isStreetLight = text.includes("street light") || text.includes("street lamp");
+
           if (text.includes("water") && dept.name.includes("Water")) score += 10;
-          if ((text.includes("garbage") || text.includes("trash") || text.includes("smell")) && cat.name.includes("Garbage")) score += 10;
-          if ((text.includes("light") || text.includes("pole") || text.includes("electricity")) && dept.name.includes("Electricity")) score += 10;
-          if ((text.includes("road") || text.includes("pothole") || text.includes("street")) && dept.name.includes("Road")) score += 10;
-          if ((text.includes("police") || text.includes("theft") || text.includes("bribe")) && dept.name.includes("Home Affairs")) score += 10;
-          if ((text.includes("hospital") || text.includes("health") || text.includes("doctor") || text.includes("mosquito")) && dept.name.includes("Health")) score += 10;
-          if ((text.includes("train") || text.includes("railway") || text.includes("ticket")) && dept.name.includes("Railway")) score += 10;
-          if ((text.includes("tax") || text.includes("refund") || text.includes("pan")) && dept.name.includes("Taxes")) score += 10;
+          if ((text.includes("garbage") || text.includes("trash") || text.includes("smell") || text.includes("waste") || text.includes("dump")) && cat.name.includes("Garbage")) score += 10;
+          if ((text.includes("light") || text.includes("pole") || text.includes("electricity") || text.includes("bulb") || text.includes("wiring") || text.includes("dark") || text.includes("power") || text.includes("outage") || text.includes("transformer") || text.includes("voltage")) && dept.name.includes("Electricity")) score += 10;
+          if ((text.includes("road") || text.includes("pothole") || (text.includes("street") && !isStreetLight)) && dept.name.includes("Road")) score += 10;
+          if ((text.includes("police") || text.includes("theft") || text.includes("bribe") || text.includes("crime") || text.includes("robbery")) && dept.name.includes("Home Affairs")) score += 10;
+          if ((text.includes("hospital") || text.includes("health") || text.includes("doctor") || text.includes("mosquito") || text.includes("disease") || text.includes("clinic")) && dept.name.includes("Health")) score += 10;
+          if ((text.includes("train") || text.includes("railway") || text.includes("ticket") || text.includes("platform") || text.includes("track")) && dept.name.includes("Railway")) score += 10;
+          if ((text.includes("tax") || text.includes("refund") || text.includes("pan") || text.includes("gst") || text.includes("income tax")) && dept.name.includes("Taxes")) score += 10;
 
           if (score > bestScore) {
             bestScore = score;
