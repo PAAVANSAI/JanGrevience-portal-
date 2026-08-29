@@ -3,6 +3,9 @@ import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
+  let departments: any[] = [];
+  let categories: any[] = [];
+  
   try {
     const { description } = await req.json();
 
@@ -27,12 +30,12 @@ export async function POST(req: Request) {
     }
 
     // Fetch Departments and Categories
-    const { data: departments, error: deptError } = await supabase
+    const { data: deptData, error: deptError } = await supabase
       .from("departments")
       .select("id, name, description")
       .eq("is_active", true);
     
-    const { data: categories, error: catError } = await supabase
+    const { data: catData, error: catError } = await supabase
       .from("categories")
       .select("id, name, description, department_id")
       .eq("is_active", true);
@@ -41,6 +44,9 @@ export async function POST(req: Request) {
       console.error("DB fetch error:", { deptError, catError });
       throw new Error("Failed to load taxonomy from database.");
     }
+    
+    departments = deptData || [];
+    categories = catData || [];
 
     if (!departments?.length || !categories?.length) {
       console.error("Empty taxonomy:", { deptCount: departments?.length, catCount: categories?.length });
