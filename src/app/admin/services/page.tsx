@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import DashboardHeader from "@/components/layout/DashboardHeader";
-import DashboardSidebar from "@/components/layout/DashboardSidebar";
+import AdminPageHeader from "@/components/layout/AdminPageHeader";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 
 interface Service {
   id: string;
@@ -87,9 +87,9 @@ export default function AdminServicesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <DashboardHeader userRole="SUPER_ADMIN" />
+      <AdminPageHeader userRole="SUPER_ADMIN" />
       <div className="flex h-[calc(100vh-64px)]">
-        <DashboardSidebar userRole="SUPER_ADMIN" />
+        <AdminSidebar userRole="SUPER_ADMIN" />
         <main className="flex-1 p-8 overflow-y-auto">
           <div className="max-w-6xl mx-auto">
             <div className="flex justify-between items-center mb-8">
