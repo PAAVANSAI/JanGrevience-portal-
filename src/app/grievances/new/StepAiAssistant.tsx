@@ -140,11 +140,6 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
     );
   }
 
-  // Determine confidence color
-  const confColor = suggestion.confidence >= 80 ? "text-emerald-600 bg-emerald-50 border-emerald-200" 
-                  : suggestion.confidence >= 50 ? "text-amber-600 bg-amber-50 border-amber-200" 
-                  : "text-rose-600 bg-rose-50 border-rose-200";
-
   const handleAccept = async () => {
     const isValid = await trigger(["state", "district"]);
     if (isValid) {
@@ -163,7 +158,7 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
         <p className="text-sm text-text-secondary">We've identified the appropriate routing for your issue.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-4 border border-border rounded-xl bg-bg">
           <p className="text-xs font-semibold text-text-muted uppercase mb-1">Department</p>
           <p className="text-base font-medium text-text-primary">{departmentName || "Loading..."}</p>
@@ -171,14 +166,6 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
         <div className="p-4 border border-border rounded-xl bg-bg">
           <p className="text-xs font-semibold text-text-muted uppercase mb-1">Category</p>
           <p className="text-base font-medium text-text-primary">{categoryName || "Loading..."}</p>
-        </div>
-        <div className="p-4 border border-border rounded-xl bg-bg flex flex-col justify-center">
-          <p className="text-xs font-semibold text-text-muted uppercase mb-1">Confidence</p>
-          <div>
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${confColor}`}>
-              {suggestion.confidence}%
-            </span>
-          </div>
         </div>
       </div>
 
