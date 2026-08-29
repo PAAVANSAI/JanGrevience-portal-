@@ -21,8 +21,8 @@ export async function POST(req: Request) {
     }
 
     // Fetch Departments and Categories
-    const { data: departments } = await supabase.from("departments").select("id, name");
-    const { data: categories } = await supabase.from("categories").select("id, name, department_id");
+    const { data: departments } = await supabase.from("departments").select("id, name, description").eq("is_active", true);
+    const { data: categories } = await supabase.from("categories").select("id, name, description, department_id").eq("is_active", true);
 
     if (!departments || !categories) {
       throw new Error("Failed to load taxonomy from database.");
@@ -31,20 +31,21 @@ export async function POST(req: Request) {
     // Build taxonomy map for prompt
     const taxonomy = departments.map((d) => ({
       departmentName: d.name,
+      departmentDescription: d.description,
       departmentId: d.id,
       categories: categories
         .filter((c) => c.department_id === d.id)
-        .map((c) => ({ categoryName: c.name, categoryId: c.id })),
+        .map((c) => ({ categoryName: c.name, categoryDescription: c.description, categoryId: c.id })),
     }));
 
     const prompt = `
 You are an intelligent grievance routing assistant for a municipal government and CPGRAMS portal.
 Your job is to read a citizen's natural language description of their problem and classify it into one of the provided departments and categories.
 
-Before classifying, you must first critically ANALYZE the grievance. Identify the core issue, who is affected, and what government body would typically handle it.
-After your analysis, select the MOST APPROPRIATE department and category from the provided taxonomy.
+Before classifying, you must first critically ANALYZE the grievance against the provided department descriptions. Identify the core issue, who is affected, and what government body would typically handle it.
+After your analysis, select the MOST APPROPRIATE department and category from the provided taxonomy. If you are unsure, you MUST select the "Other / Not Sure" department if it exists, or the "Other" category within a matched department.
 
-Here are the available departments and their categories:
+Here are the available departments and their categories (with descriptions of what they handle):
 ${JSON.stringify(taxonomy, null, 2)}
 
 Citizen Description: "${description}"
