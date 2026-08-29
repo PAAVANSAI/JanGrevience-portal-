@@ -3,7 +3,7 @@ import Logo from "@/components/ui/Logo";
 
 export default function BrandPanel() {
   return (
-    <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-navy relative overflow-hidden items-center justify-center">
+    <div className="hidden lg:flex lg:w-[45%] xl:w-[42%] bg-[#1B2A4A] relative overflow-hidden items-center justify-center">
       {/* Subtle geometric background pattern */}
       <div className="absolute inset-0 opacity-[0.07]">
         <svg
@@ -31,7 +31,7 @@ export default function BrandPanel() {
       </div>
 
       {/* Gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-navy-light/30 via-transparent to-navy-dark/50" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#243556]/30 via-transparent to-[#111D33]/50" />
 
       {/* Content */}
       <div className="relative z-10 text-center px-8 max-w-sm">
