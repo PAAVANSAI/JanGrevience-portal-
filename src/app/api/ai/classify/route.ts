@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function POST(req: Request) {
   try {
     const { description } = await req.json();
@@ -11,6 +9,14 @@ export async function POST(req: Request) {
     if (!description || typeof description !== "string") {
       return NextResponse.json({ error: "Description is required" }, { status: 400 });
     }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set in environment variables");
+      return NextResponse.json({ error: "AI service not configured" }, { status: 500 });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
 
     const supabase = await createClient();
 
@@ -21,67 +27,115 @@ export async function POST(req: Request) {
     }
 
     // Fetch Departments and Categories
-    const { data: departments } = await supabase.from("departments").select("id, name, description").eq("is_active", true);
-    const { data: categories } = await supabase.from("categories").select("id, name, description, department_id").eq("is_active", true);
+    const { data: departments, error: deptError } = await supabase
+      .from("departments")
+      .select("id, name, description")
+      .eq("is_active", true);
+    
+    const { data: categories, error: catError } = await supabase
+      .from("categories")
+      .select("id, name, description, department_id")
+      .eq("is_active", true);
 
-    if (!departments || !categories) {
+    if (deptError || catError) {
+      console.error("DB fetch error:", { deptError, catError });
       throw new Error("Failed to load taxonomy from database.");
     }
 
-    // Build taxonomy map for prompt
-    const taxonomy = departments.map((d) => ({
-      departmentName: d.name,
-      departmentDescription: d.description,
-      departmentId: d.id,
-      categories: categories
+    if (!departments?.length || !categories?.length) {
+      console.error("Empty taxonomy:", { deptCount: departments?.length, catCount: categories?.length });
+      throw new Error("No departments or categories found in the database.");
+    }
+
+    console.log(`AI Classify: Loaded ${departments.length} departments and ${categories.length} categories`);
+
+    // Build a clean, compact taxonomy for the prompt
+    const taxonomyText = departments.map((d) => {
+      const deptCats = categories
         .filter((c) => c.department_id === d.id)
-        .map((c) => ({ categoryName: c.name, categoryDescription: c.description, categoryId: c.id })),
-    }));
+        .map((c) => `    - "${c.name}" (ID: ${c.id})`)
+        .join("\n");
+      return `  Department: "${d.name}" (ID: ${d.id})\n  Description: ${d.description || "N/A"}\n  Categories:\n${deptCats || "    (no categories)"}`;
+    }).join("\n\n");
 
-    const prompt = `
-You are an intelligent grievance routing assistant for a municipal government and CPGRAMS portal.
-Your job is to read a citizen's natural language description of their problem and classify it into one of the provided departments and categories.
+    const prompt = `You are JanGrievance AI, a grievance classification assistant for Indian government services.
 
-Before classifying, you must first critically ANALYZE the grievance against the provided department descriptions. Identify the core issue, who is affected, and what government body would typically handle it.
-After your analysis, select the MOST APPROPRIATE department and category from the provided taxonomy. If you are unsure, you MUST select the "Other / Not Sure" department if it exists, or the "Other" category within a matched department.
+TASK: Read the citizen's complaint below and pick the BEST matching department and category from the list.
 
-Here are the available departments and their categories (with descriptions of what they handle):
-${JSON.stringify(taxonomy, null, 2)}
+AVAILABLE DEPARTMENTS AND CATEGORIES:
+${taxonomyText}
 
-Citizen Description: "${description}"
+CITIZEN'S COMPLAINT:
+"${description}"
 
-Respond strictly with a JSON object in this exact format (do not use markdown tags like \`\`\`json):
-{
-  "analysis": "Your step-by-step reasoning about the core issue and what type of department should handle it.",
-  "suggestedDepartmentId": "uuid-string-from-taxonomy",
-  "suggestedCategoryId": "uuid-string-from-taxonomy",
-  "confidence": number-between-0-and-100,
-  "reasoning": "A concise 1-sentence explanation of why this specific department/category was chosen."
-}
+INSTRUCTIONS:
+1. Identify what the citizen is complaining about.
+2. Match it to the most relevant department based on its description.
+3. Pick the best category within that department.
+4. You MUST use the exact department ID and category ID from the list above.
+5. If nothing fits well, look for any department or category with "Other" in its name.
 
-If the description is complete gibberish or entirely unrelated to government services, set suggestedDepartmentId and suggestedCategoryId to null, and confidence to 0.
-    `;
+Respond with ONLY this JSON (no markdown, no backticks, no explanation outside the JSON):
+{"analysis":"brief reasoning","suggestedDepartmentId":"exact-uuid-from-list","suggestedCategoryId":"exact-uuid-from-list","confidence":85,"reasoning":"one sentence why"}`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
+    console.log("AI Classify: Sending prompt to Gemini...");
+
+    let result;
+    
+    // Try with gemini-2.0-flash first, fall back to gemini-1.5-flash
+    const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.0-flash-lite"];
+    let lastError: any = null;
+
+    for (const model of models) {
+      try {
+        console.log(`AI Classify: Trying model ${model}...`);
+        const response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+          }
+        });
+
+        let responseText = response.text;
+        if (!responseText) {
+          console.error(`AI Classify: Empty response from ${model}`);
+          continue;
+        }
+
+        console.log(`AI Classify: Raw response from ${model}:`, responseText.substring(0, 200));
+
+        // Strip markdown formatting if present
+        responseText = responseText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
+
+        result = JSON.parse(responseText);
+        console.log("AI Classify: Success!", { 
+          dept: result.suggestedDepartmentId, 
+          cat: result.suggestedCategoryId, 
+          confidence: result.confidence 
+        });
+        break; // Success, stop trying models
+      } catch (modelError: any) {
+        console.error(`AI Classify: Model ${model} failed:`, modelError.message);
+        lastError = modelError;
+        continue;
       }
-    });
+    }
 
-    let responseText = response.text;
-    if (!responseText) throw new Error("Empty AI response");
-
-    // Strip markdown formatting if Gemini included it despite instructions
-    responseText = responseText.replace(/```json\n?/gi, '').replace(/```\n?/g, '').trim();
-
-    const result = JSON.parse(responseText);
+    if (!result) {
+      throw lastError || new Error("All AI models failed");
+    }
 
     return NextResponse.json(result);
 
   } catch (error: any) {
     console.error("AI Classification Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message,
+      suggestedDepartmentId: null,
+      suggestedCategoryId: null,
+      confidence: 0,
+      reasoning: "AI classification failed. Please select manually."
+    }, { status: 200 }); // Return 200 so frontend doesn't crash
   }
 }
