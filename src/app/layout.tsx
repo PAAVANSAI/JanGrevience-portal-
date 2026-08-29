@@ -36,8 +36,7 @@ export default function RootLayout({
               (function() {
                 try {
                   var stored = localStorage.getItem('jan-theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  if (stored === 'dark' || (!stored && prefersDark)) {
+                  if (stored === 'dark') {
                     document.documentElement.classList.add('dark');
                   }
                 } catch(e) {}
