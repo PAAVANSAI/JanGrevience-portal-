@@ -97,6 +97,8 @@ export default function NewGrievancePage() {
           state: data.state,
           district: data.district,
           priority: data.priority,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
         })
         .select()
         .single();

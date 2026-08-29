@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
-import { createClient } from "@/lib/supabase/client";
 import dynamic from "next/dynamic";
 
 // Dynamic import for the entire map component to avoid SSR and context chunking issues
@@ -11,37 +10,23 @@ const LiveMap = dynamic(() => import("@/components/ui/LiveMap"), { ssr: false, l
 export default function LiveMapPage() {
   const [grievances, setGrievances] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function fetchMapData() {
-      // Fetch unresolved grievances with coordinates
-      const { data } = await supabase
-        .from("grievances")
-        .select(`
-          id, 
-          grievance_number, 
-          subject, 
-          status, 
-          upvote_count, 
-          latitude, 
-          longitude,
-          categories(name)
-        `)
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .not("status", "in", '("RESOLVED","CLOSED","REJECTED")')
-        .order("upvote_count", { ascending: false })
-        .limit(500); // Limit to prevent browser crash
-        
-      if (data) {
-        setGrievances(data);
+      try {
+        const res = await fetch("/api/map");
+        const data = await res.json();
+        if (data.grievances) {
+          setGrievances(data.grievances);
+        }
+      } catch (err) {
+        console.error("Failed to fetch map data:", err);
       }
       setLoading(false);
     }
 
     fetchMapData();
-  }, [supabase]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-bg flex flex-col">
