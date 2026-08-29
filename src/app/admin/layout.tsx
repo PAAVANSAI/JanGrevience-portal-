@@ -1,6 +1,5 @@
 import React from "react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
-import FloatingSignOut from "@/components/layout/FloatingSignOut";
 
 export default function AdminLayout({
   children,

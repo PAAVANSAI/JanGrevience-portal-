@@ -86,24 +86,20 @@ export default function AdminServicesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg">
-      <AdminPageHeader userRole="SUPER_ADMIN" />
-      <div className="flex h-[calc(100vh-64px)]">
-        <AdminSidebar userRole="SUPER_ADMIN" />
-        <main className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-2xl font-bold text-navy">Manage Services</h1>
-                <p className="text-text-secondary text-sm mt-1">Add or update services displayed in the Citizen Directory.</p>
-              </div>
-              <button 
-                onClick={() => handleOpenModal()}
-                className="bg-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-hover transition-colors"
-              >
-                + Add Service
-              </button>
-            </div>
+    <div className="p-8 pb-20">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <AdminPageHeader 
+          title="Manage Services"
+          description="Add or update services displayed in the Citizen Directory."
+          action={
+            <button 
+              onClick={() => handleOpenModal()}
+              className="bg-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-hover transition-colors shadow-sm"
+            >
+              + Add Service
+            </button>
+          }
+        />
 
             <div className="bg-surface rounded-xl border border-border overflow-hidden">
               <div className="overflow-x-auto">
@@ -148,10 +144,7 @@ export default function AdminServicesPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
           </div>
-        </main>
-      </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy/20 backdrop-blur-sm">
