@@ -121,6 +121,27 @@ function LoginContent() {
       title="Welcome back"
       subtitle="Sign in to your account"
     >
+      {/* App Feature Highlights */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl">
+        <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide mb-3 text-center">Why citizens love JanGrievance</p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { icon: "✨", label: "Simple & Easy UI", desc: "File in under 2 min" },
+            { icon: "📱", label: "Mobile Friendly", desc: "Works on any device" },
+            { icon: "🤖", label: "AI-Powered", desc: "Smart dept routing" },
+            { icon: "📍", label: "Live Tracking", desc: "Real-time updates" },
+          ].map((f) => (
+            <div key={f.label} className="flex items-start gap-2 p-2 bg-white/70 rounded-lg">
+              <span className="text-base leading-none mt-0.5">{f.icon}</span>
+              <div>
+                <p className="text-xs font-semibold text-text-primary leading-tight">{f.label}</p>
+                <p className="text-[10px] text-text-secondary leading-tight mt-0.5">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         {verified && (
           <FormAlert

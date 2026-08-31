@@ -8,6 +8,7 @@ import type { AiClassificationSuggestion } from "@/types/ai";
 import { createClient } from "@/lib/supabase/client";
 import AuthInput from "@/components/auth/AuthInput";
 import StateDistrictSelect from "@/components/ui/StateDistrictSelect";
+import LocationPicker from "@/components/ui/LocationPicker";
 
 interface StepAiAssistantProps {
   onAccept: () => void;
@@ -177,6 +178,10 @@ export default function StepAiAssistant({ onAccept, onModify, description }: Ste
       <div className="pt-4 border-t border-border">
         <h3 className="text-sm font-semibold text-text-primary mb-3">Please provide location details to continue:</h3>
         <StateDistrictSelect stateFieldName="state" districtFieldName="district" />
+      </div>
+
+      <div className="pt-4 border-t border-border">
+        <LocationPicker />
       </div>
 
       <div className="pt-4 border-t border-border flex flex-col sm:flex-row justify-end gap-3">
