@@ -33,7 +33,6 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
-/** Returns a YYYY-MM-DD string for a given date */
 function toDateKey(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -41,7 +40,6 @@ function toDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-/** Returns the heatmap intensity level (0-4) for a count */
 function getIntensity(count: number): number {
   if (count === 0) return 0;
   if (count <= 2) return 1;
@@ -54,6 +52,7 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
   const supabase = createClient();
   const today = useMemo(() => new Date(), []);
 
+  const [isOpen, setIsOpen] = useState(false);
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [grievances, setGrievances] = useState<CalendarGrievance[]>([]);
@@ -61,7 +60,6 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [direction, setDirection] = useState(0);
 
-  // Fetch grievances for the displayed month
   const fetchGrievances = useCallback(async () => {
     setLoading(true);
     try {
@@ -89,10 +87,9 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
   }, [departmentId, currentYear, currentMonth, supabase]);
 
   useEffect(() => {
-    fetchGrievances();
-  }, [fetchGrievances]);
+    if (isOpen) fetchGrievances();
+  }, [fetchGrievances, isOpen]);
 
-  // Group grievances by date key
   const grievancesByDate = useMemo(() => {
     const map = new Map<string, CalendarGrievance[]>();
     for (const g of grievances) {
@@ -104,32 +101,22 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
     return map;
   }, [grievances]);
 
-  // Calendar grid data
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDayOffset = getFirstDayOfMonth(currentYear, currentMonth);
   const todayKey = toDateKey(today);
 
-  // Navigation
   function goToPreviousMonth() {
     setDirection(-1);
     setSelectedDate(null);
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear((y) => y - 1); }
+    else { setCurrentMonth((m) => m - 1); }
   }
 
   function goToNextMonth() {
     setDirection(1);
     setSelectedDate(null);
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear((y) => y + 1); }
+    else { setCurrentMonth((m) => m + 1); }
   }
 
   function goToToday() {
@@ -139,13 +126,9 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
     setSelectedDate(null);
   }
 
-  // Selected date grievances
   const selectedGrievances = selectedDate ? (grievancesByDate.get(selectedDate) || []) : [];
-
-  // Total grievances this month
   const totalThisMonth = grievances.length;
 
-  // Build cells array
   const cells: Array<{ day: number | null; dateKey: string; count: number }> = [];
   for (let i = 0; i < firstDayOffset; i++) {
     cells.push({ day: null, dateKey: "", count: 0 });
@@ -162,202 +145,58 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
     exit: (dir: number) => ({ opacity: 0, x: dir >= 0 ? -40 : 40 }),
   };
 
-  const intensityClasses = [
-    "",
-    "cal-heat-1",
-    "cal-heat-2",
-    "cal-heat-3",
-    "cal-heat-4",
-  ];
+  const intensityClasses = ["", "cal-heat-1", "cal-heat-2", "cal-heat-3", "cal-heat-4"];
 
   return (
-    <div id="calendar" className="scroll-mt-24">
-      <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-border bg-surface-2/50">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-blue/10 text-blue flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-text-primary">Grievance Calendar</h2>
-              <p className="text-xs text-text-muted">
-                {totalThisMonth} grievance{totalThisMonth !== 1 ? "s" : ""} in {MONTH_NAMES[currentMonth]} {currentYear}
-              </p>
-            </div>
-          </div>
-
-          {/* Month navigation */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={goToToday}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-text-secondary bg-surface border border-border rounded-lg hover:bg-surface-2 hover:text-text-primary transition-all"
-            >
-              Today
-            </button>
-            <button
-              onClick={goToPreviousMonth}
-              aria-label="Previous month"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:bg-surface hover:text-text-primary border border-transparent hover:border-border transition-all"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-            <button
-              onClick={goToNextMonth}
-              aria-label="Next month"
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:bg-surface hover:text-text-primary border border-transparent hover:border-border transition-all"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          </div>
+    <>
+      {/* Small Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="inline-flex items-center gap-2 px-4 py-2.5 bg-surface border border-border rounded-xl shadow-sm hover:border-blue/40 hover:shadow-md transition-all group"
+      >
+        <div className="w-8 h-8 rounded-lg bg-blue/10 text-blue flex items-center justify-center group-hover:bg-blue group-hover:text-white transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
         </div>
-
-        {/* Calendar body */}
-        <div className="p-3 sm:p-5">
-          {/* Month title (animated) */}
-          <div className="relative h-8 mb-4 flex items-center justify-center overflow-hidden">
-            <AnimatePresence mode="wait" custom={direction}>
-              <motion.h3
-                key={`${currentYear}-${currentMonth}`}
-                custom={direction}
-                variants={monthVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                className="absolute text-sm sm:text-base font-bold text-text-primary tracking-wide"
-              >
-                {MONTH_NAMES[currentMonth]} {currentYear}
-              </motion.h3>
-            </AnimatePresence>
-          </div>
-
-          {/* Weekday headers */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {WEEKDAYS.map((day) => (
-              <div
-                key={day}
-                className="text-center text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wider py-1.5"
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Day cells */}
-          {loading ? (
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 35 }).map((_, i) => (
-                <div key={i} className="aspect-square rounded-lg bg-surface-2 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-7 gap-1">
-              {cells.map((cell, idx) => {
-                if (cell.day === null) {
-                  return <div key={`empty-${idx}`} className="aspect-square" />;
-                }
-
-                const isToday = cell.dateKey === todayKey;
-                const isSelected = cell.dateKey === selectedDate;
-                const intensity = getIntensity(cell.count);
-                const hasGrievances = cell.count > 0;
-
-                return (
-                  <button
-                    key={cell.dateKey}
-                    onClick={() =>
-                      setSelectedDate(isSelected ? null : cell.dateKey)
-                    }
-                    className={`
-                      aspect-square rounded-lg flex flex-col items-center justify-center relative
-                      transition-all duration-200 group cursor-pointer
-                      ${isSelected
-                        ? "ring-2 ring-blue bg-blue-50 shadow-sm"
-                        : isToday
-                          ? "ring-2 ring-blue/40 bg-blue-50/50"
-                          : hasGrievances
-                            ? intensityClasses[intensity]
-                            : "hover:bg-surface-2"
-                      }
-                      ${!isSelected && hasGrievances ? "hover:ring-1 hover:ring-blue/30" : ""}
-                    `}
-                    aria-label={`${cell.day} ${MONTH_NAMES[currentMonth]} — ${cell.count} grievance${cell.count !== 1 ? "s" : ""}`}
-                  >
-                    <span
-                      className={`text-xs sm:text-sm font-semibold leading-none
-                        ${isSelected ? "text-blue" : isToday ? "text-blue" : "text-text-primary"}
-                      `}
-                    >
-                      {cell.day}
-                    </span>
-                    {hasGrievances && (
-                      <span
-                        className={`
-                          text-[9px] sm:text-[10px] font-bold leading-none mt-0.5 sm:mt-1
-                          px-1 py-0.5 rounded-full min-w-[16px] text-center
-                          ${isSelected
-                            ? "bg-blue text-white"
-                            : intensity >= 3
-                              ? "bg-blue/20 text-blue"
-                              : "bg-blue/10 text-blue/80"
-                          }
-                        `}
-                      >
-                        {cell.count}
-                      </span>
-                    )}
-                    {isToday && !hasGrievances && (
-                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Heatmap legend */}
-          <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-border/50">
-            <span className="text-[10px] text-text-muted font-medium">Less</span>
-            {[0, 1, 2, 3, 4].map((level) => (
-              <div
-                key={level}
-                className={`w-3.5 h-3.5 rounded-sm border border-border/30 ${
-                  level === 0
-                    ? "bg-surface-2"
-                    : intensityClasses[level]
-                }`}
-              />
-            ))}
-            <span className="text-[10px] text-text-muted font-medium">More</span>
-          </div>
+        <div className="text-left">
+          <p className="text-sm font-semibold text-text-primary">Grievance Calendar</p>
+          <p className="text-[11px] text-text-muted">View daily breakdown</p>
         </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted ml-1">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
 
-        {/* Selected date detail panel */}
-        <AnimatePresence>
-          {selectedDate && (
+      {/* Modal Popup */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) { setIsOpen(false); setSelectedDate(null); } }}
+          >
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-              className="overflow-hidden border-t border-border"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="w-full max-w-md max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-4 sm:p-5 bg-surface-2/30">
-                {/* Panel header */}
-                <div className="flex items-center justify-between mb-4">
+              <div className="bg-surface border border-border rounded-2xl shadow-xl overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-surface-2/50">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-lg bg-blue/10 text-blue flex items-center justify-center">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
                         <line x1="16" y1="2" x2="16" y2="6" />
                         <line x1="8" y1="2" x2="8" y2="6" />
@@ -365,94 +204,125 @@ export default function GrievanceCalendar({ departmentId }: GrievanceCalendarPro
                       </svg>
                     </div>
                     <div>
-                      <h4 className="text-sm font-bold text-text-primary">
-                        {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, {
-                          weekday: "long",
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </h4>
-                      <p className="text-xs text-text-muted">
-                        {selectedGrievances.length} grievance{selectedGrievances.length !== 1 ? "s" : ""} filed
-                      </p>
+                      <h2 className="text-sm font-bold text-text-primary">Grievance Calendar</h2>
+                      <p className="text-[11px] text-text-muted">{totalThisMonth} grievance{totalThisMonth !== 1 ? "s" : ""} in {MONTH_NAMES[currentMonth]}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedDate(null)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-surface transition-colors"
-                    aria-label="Close detail panel"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={goToToday} className="hidden sm:inline-flex px-2.5 py-1 text-[11px] font-semibold text-text-secondary bg-surface border border-border rounded-md hover:bg-surface-2 transition-all">Today</button>
+                    <button onClick={goToPreviousMonth} aria-label="Previous month" className="w-7 h-7 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary transition-all">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                    </button>
+                    <button onClick={goToNextMonth} aria-label="Next month" className="w-7 h-7 flex items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-text-primary transition-all">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                    </button>
+                    <button onClick={() => { setIsOpen(false); setSelectedDate(null); }} aria-label="Close" className="w-7 h-7 flex items-center justify-center rounded-md text-text-secondary hover:bg-red-50 hover:text-red-500 transition-all ml-0.5">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Grievance list */}
-                {selectedGrievances.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
-                    <div className="w-12 h-12 rounded-xl bg-surface-2 flex items-center justify-center mb-3">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-text-muted font-medium">No grievances filed on this date</p>
+                {/* Calendar Grid */}
+                <div className="p-4">
+                  <div className="relative h-6 mb-2 flex items-center justify-center overflow-hidden">
+                    <AnimatePresence mode="wait" custom={direction}>
+                      <motion.h3 key={`${currentYear}-${currentMonth}`} custom={direction} variants={monthVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.25, ease: "easeInOut" }} className="absolute text-sm font-bold text-text-primary">
+                        {MONTH_NAMES[currentMonth]} {currentYear}
+                      </motion.h3>
+                    </AnimatePresence>
                   </div>
-                ) : (
-                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                    {selectedGrievances.map((g, idx) => (
-                      <motion.div
-                        key={g.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04, duration: 0.2 }}
-                      >
-                        <Link
-                          href={`/department-admin/grievances/${g.id}`}
-                          className="flex items-center gap-3 p-3 bg-surface rounded-xl border border-border hover:border-blue/30 hover:shadow-sm transition-all group"
-                        >
-                          {/* Sequence number */}
-                          <div className="w-7 h-7 rounded-lg bg-blue/10 text-blue flex items-center justify-center flex-shrink-0 text-xs font-bold group-hover:bg-blue group-hover:text-white transition-colors">
-                            {idx + 1}
-                          </div>
 
-                          {/* Grievance info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className="text-[11px] font-mono font-semibold text-text-muted">
-                                {g.grievance_number}
-                              </span>
-                              <StatusBadge status={g.status as any} className="!text-[9px] !px-1.5 !py-0" />
-                            </div>
-                            <p className="text-sm font-medium text-text-primary truncate group-hover:text-blue transition-colors">
-                              {g.subject}
-                            </p>
-                            {g.categories?.name && (
-                              <p className="text-[11px] text-text-muted mt-0.5 truncate">
-                                {g.categories.name}
-                              </p>
-                            )}
-                          </div>
-
-                          {/* Arrow */}
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-hover:text-blue transition-colors flex-shrink-0">
-                            <polyline points="9 18 15 12 9 6" />
-                          </svg>
-                        </Link>
-                      </motion.div>
+                  <div className="grid grid-cols-7 gap-1 mb-1">
+                    {WEEKDAYS.map((day) => (
+                      <div key={day} className="text-center text-[10px] font-semibold text-text-muted uppercase py-1">{day}</div>
                     ))}
                   </div>
-                )}
+
+                  {loading ? (
+                    <div className="grid grid-cols-7 gap-1">
+                      {Array.from({ length: 35 }).map((_, i) => (
+                        <div key={i} className="aspect-square rounded-lg bg-surface-2 animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-7 gap-1">
+                      {cells.map((cell, idx) => {
+                        if (cell.day === null) return <div key={`empty-${idx}`} className="aspect-square" />;
+                        const isToday = cell.dateKey === todayKey;
+                        const isSelected = cell.dateKey === selectedDate;
+                        const intensity = getIntensity(cell.count);
+                        const hasGrievances = cell.count > 0;
+                        return (
+                          <button
+                            key={cell.dateKey}
+                            onClick={() => setSelectedDate(isSelected ? null : cell.dateKey)}
+                            className={`aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all duration-200 cursor-pointer
+                              ${isSelected ? "ring-2 ring-blue bg-blue-50 shadow-sm" : isToday ? "ring-2 ring-blue/40 bg-blue-50/50" : hasGrievances ? intensityClasses[intensity] : "hover:bg-surface-2"}
+                              ${!isSelected && hasGrievances ? "hover:ring-1 hover:ring-blue/30" : ""}`}
+                            aria-label={`${cell.day} ${MONTH_NAMES[currentMonth]} — ${cell.count} grievance${cell.count !== 1 ? "s" : ""}`}
+                          >
+                            <span className={`text-xs font-semibold leading-none ${isSelected || isToday ? "text-blue" : "text-text-primary"}`}>{cell.day}</span>
+                            {hasGrievances && (
+                              <span className={`text-[9px] font-bold leading-none mt-0.5 px-1 py-0.5 rounded-full min-w-[14px] text-center ${isSelected ? "bg-blue text-white" : intensity >= 3 ? "bg-blue/20 text-blue" : "bg-blue/10 text-blue/80"}`}>{cell.count}</span>
+                            )}
+                            {isToday && !hasGrievances && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-1.5 mt-3 pt-2 border-t border-border/50">
+                    <span className="text-[10px] text-text-muted">Less</span>
+                    {[0, 1, 2, 3, 4].map((level) => (
+                      <div key={level} className={`w-3 h-3 rounded-sm border border-border/30 ${level === 0 ? "bg-surface-2" : intensityClasses[level]}`} />
+                    ))}
+                    <span className="text-[10px] text-text-muted">More</span>
+                  </div>
+                </div>
+
+                {/* Selected Date Detail */}
+                <AnimatePresence>
+                  {selectedDate && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }} className="overflow-hidden border-t border-border">
+                      <div className="p-4 bg-surface-2/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-xs font-bold text-text-primary">
+                            {new Date(selectedDate + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                            <span className="font-normal text-text-muted ml-1.5">— {selectedGrievances.length} grievance{selectedGrievances.length !== 1 ? "s" : ""}</span>
+                          </h4>
+                          <button onClick={() => setSelectedDate(null)} className="w-5 h-5 rounded flex items-center justify-center text-text-muted hover:text-text-primary transition-colors">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                          </button>
+                        </div>
+                        {selectedGrievances.length === 0 ? (
+                          <p className="text-xs text-text-muted text-center py-3">No grievances filed</p>
+                        ) : (
+                          <div className="space-y-1.5 max-h-44 overflow-y-auto">
+                            {selectedGrievances.map((g, idx) => (
+                              <Link key={g.id} href={`/department-admin/grievances/${g.id}`} onClick={() => setIsOpen(false)}
+                                className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border hover:border-blue/30 transition-all group">
+                                <div className="w-5 h-5 rounded bg-blue/10 text-blue flex items-center justify-center flex-shrink-0 text-[10px] font-bold group-hover:bg-blue group-hover:text-white transition-colors">{idx + 1}</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-mono text-text-muted">{g.grievance_number}</span>
+                                    <StatusBadge status={g.status as any} className="!text-[8px] !px-1 !py-0" />
+                                  </div>
+                                  <p className="text-xs font-medium text-text-primary truncate group-hover:text-blue transition-colors">{g.subject}</p>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
