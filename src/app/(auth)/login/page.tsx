@@ -122,24 +122,30 @@ function LoginContent() {
       subtitle="Sign in to your account"
     >
       {/* App Feature Highlights */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl">
-        <p className="text-xs font-semibold text-blue-800 uppercase tracking-wide mb-3 text-center">Why citizens love JanGrievance</p>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { icon: "✨", label: "Simple & Easy UI", desc: "File in under 2 min" },
-            { icon: "📱", label: "Mobile Friendly", desc: "Works on any device" },
-            { icon: "🤖", label: "AI-Powered", desc: "Smart dept routing" },
-            { icon: "📍", label: "Live Tracking", desc: "Real-time updates" },
-          ].map((f) => (
-            <div key={f.label} className="flex items-start gap-2 p-2 bg-white/70 rounded-lg">
-              <span className="text-base leading-none mt-0.5">{f.icon}</span>
-              <div>
-                <p className="text-xs font-semibold text-text-primary leading-tight">{f.label}</p>
-                <p className="text-[10px] text-text-secondary leading-tight mt-0.5">{f.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      <div className="mb-6 flex items-center justify-center gap-5 py-3 px-4 bg-bg rounded-lg border border-border">
+        {[
+          {
+            label: "Simple UI",
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>,
+          },
+          {
+            label: "Mobile Ready",
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+          },
+          {
+            label: "AI-Powered",
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>,
+          },
+          {
+            label: "Live Tracking",
+            icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+          },
+        ].map((f) => (
+          <div key={f.label} className="flex items-center gap-1.5 text-text-secondary">
+            <span className="text-blue">{f.icon}</span>
+            <span className="text-[11px] font-medium">{f.label}</span>
+          </div>
+        ))}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
