@@ -78,6 +78,12 @@ export const navigationConfig: NavItem[] = [
         href: "/department-admin/officers",
         requiresAuth: true,
         allowedRoles: ["DEPT_ADMIN", "SUPER_ADMIN"],
+      },
+      {
+        label: "Calendar",
+        href: "/department-admin#calendar",
+        requiresAuth: true,
+        allowedRoles: ["DEPT_ADMIN", "SUPER_ADMIN"],
       }
     ]
   },

@@ -8,6 +8,7 @@ import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import { useUserRole } from "@/lib/context/UserContext";
 import StatusBadge from "@/components/ui/StatusBadge";
 import SignOutButton from "@/components/auth/SignOutButton";
+import GrievanceCalendar from "@/components/analytics/GrievanceCalendar";
 
 export default function DepartmentAdminOverviewPage() {
   const [loading, setLoading] = useState(true);
@@ -401,6 +402,18 @@ export default function DepartmentAdminOverviewPage() {
           ))}
         </div>
       </motion.div>
+
+      {/* Grievance Calendar */}
+      {profile?.department_id && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="mb-8"
+        >
+          <GrievanceCalendar departmentId={profile.department_id} />
+        </motion.div>
+      )}
 
       {/* Recent Grievances Table */}
       <motion.div

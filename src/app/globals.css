@@ -410,3 +410,15 @@ input, select, textarea {
 .dark .header-gradient-border {
   box-shadow: 0 1px 0 0 var(--color-border), 0 4px 16px -4px rgb(0 0 0 / 0.3);
 }
+
+/* ===== Calendar Heatmap Cells ===== */
+
+.cal-heat-1 { background-color: rgb(219 234 254 / 0.6); }
+.cal-heat-2 { background-color: rgb(191 219 254 / 0.7); }
+.cal-heat-3 { background-color: rgb(147 197 253 / 0.6); }
+.cal-heat-4 { background-color: rgb(96 165 250 / 0.5); }
+
+.dark .cal-heat-1 { background-color: rgb(30 58 138 / 0.25); }
+.dark .cal-heat-2 { background-color: rgb(30 58 138 / 0.4); }
+.dark .cal-heat-3 { background-color: rgb(30 64 175 / 0.45); }
+.dark .cal-heat-4 { background-color: rgb(37 99 235 / 0.4); }
